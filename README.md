@@ -51,6 +51,29 @@ Tokens are stored as a hash and cannot be recovered. If you lose one, revoke it 
 
 **Get Many** operations support **Return All**, which follows ACA's cursor pagination for you, and a **Filters** collection that maps to the API's own filters.
 
+### Filtering a lead list
+
+`Lead List > Get Contacts` carries the full filter set, so you narrow the list on
+ACA's side rather than pulling everything and filtering in the workflow.
+
+The three switches people reach for most - **Has Email**, **Has LinkedIn URL**,
+**Has Phone** - are shortcuts over one general mechanism. **Field Conditions**
+exposes it directly: pick any contact field and ask whether it is *filled*,
+*empty*, *equals* or *contains* a value. Conditions combine with AND.
+
+```
+Has LinkedIn URL: true
+Field Conditions: company contains "recruit"
+Email Quality:    clean
+```
+
+Also available: search across name/email/company/title, countries, cities,
+industries, company sizes, seniorities, departments, detected and excluded
+technologies, ICP and decision-maker score ranges, and AI analysis status.
+
+These run through the same Advanced Filters engine the ACA app uses, so a filter
+means the same thing in both places.
+
 ### Event Action vs the REST resources
 
 They overlap on purpose, and the difference matters:

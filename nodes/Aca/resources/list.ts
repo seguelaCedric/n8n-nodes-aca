@@ -7,6 +7,7 @@ import {
 	splitCsv,
 	unwrapData,
 } from '../shared/descriptions';
+import { MEMBER_FILTERS_QUERY, memberFilterProperties } from '../shared/memberFilters';
 
 const forList = { resource: ['list'] };
 const forGetMany = { ...forList, operation: ['getAll'] };
@@ -85,9 +86,15 @@ export const listDescription: INodeProperties[] = [
 	},
 	{
 		...listLocator,
-		description: 'The list to read members from',
+		description: 'The list to read contacts from',
 		displayOptions: { show: forGetMembers },
-		routing: { send: { type: 'query', property: 'listId' } },
+		routing: {
+			send: { type: 'query', property: 'listId' },
+			// The filter object rides along with the list ID rather than on the
+			// Filters collection itself, so it is built once from every field the
+			// user set instead of one fragment per field.
+			request: { qs: { filters: MEMBER_FILTERS_QUERY } },
+		},
 	},
 	{
 		...listLocator,
@@ -132,6 +139,7 @@ export const listDescription: INodeProperties[] = [
 	/* -- Get Contacts ----- */
 	...returnAllProperties(forGetMembers),
 	simplifyMembersProperty(forGetMembers),
+	...memberFilterProperties(forGetMembers),
 	{
 		displayName:
 			'Smart lists return nothing here. Their membership is a saved filter that ACA evaluates on demand rather than a stored set of contacts, so there is nothing for this operation to read. The list picker marks them.',
