@@ -1,0 +1,32 @@
+# Temporary diagnostic. Answers one question the publish logs cannot: which npm
+# identity NPM_TOKEN actually carries, and what it is allowed to write.
+#
+# npm returns 404 on a PUT both when a package does not exist and when the token
+# may not create it, so the publish error alone cannot distinguish "wrong scope"
+# from "wrong account". Delete this workflow once the publish succeeds.
+name: npm doctor
+
+on:
+  workflow_dispatch:
+
+jobs:
+  doctor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Who does this token belong to?
+        run: |
+          echo "--- npm whoami ---"
+          npm whoami || echo "FAILED: token is invalid, expired, or not being read"
+          echo
+          echo "--- packages this token can write ---"
+          npm access list packages 2>&1 | head -30 || echo "FAILED: token cannot list packages"
+          echo
+          echo "--- is the name available? ---"
+          npm view n8n-nodes-aca 2>&1 | head -5 || echo "name is unregistered"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
