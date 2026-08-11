@@ -21,7 +21,7 @@ your npm and GitHub accounts.
 | `@n8n/scan-community-package` | ✅ passes, run against the packed tarball |
 | README with credentials, operations, example workflow | ✅ |
 | UX guidelines | ✅ — see below |
-| Published to npm via GitHub Actions with provenance | ⬜ **needs you** |
+| Published to npm via GitHub Actions with provenance | ✅ 0.1.1 |
 | Submitted at creators.n8n.io | ⬜ **needs you** |
 
 ### UX guidelines
@@ -118,3 +118,34 @@ Then, in the editor:
    Integrations, then disappears when the listen window closes.
 4. Activate the workflow and confirm the registered `target_url` is the
    production `/webhook/...` URL, not the `/webhook-test/...` one.
+
+
+---
+
+## How 0.1.0 and 0.1.1 actually happened
+
+Publishing a *first* npm package under an account that requires 2FA for writes is
+a deadlock, and it cost five failed CI runs to see it:
+
+- A granular token cannot publish under 2FA. npm reports this as
+  `404 Not Found - PUT ... could not be found or you do not have permission`,
+  which reads exactly like a scope problem. Only `npm publish --loglevel silly`
+  reveals the truth: `statusCode 401`, `code EOTP`.
+- Trusted publishing would bypass 2FA, but `npm trust` refuses: *"The package
+  you're configuring must already exist on the npm registry."*
+- So `0.1.0` had to be published by hand with an interactive OTP, without
+  provenance, purely to make the package exist.
+- With the package on the registry, `npm trust github --allow-publish --file
+  publish.yml` could register the repo, and `0.1.1` published through Actions
+  with a SLSA attestation.
+
+Two things that are easy to miss on the way:
+
+- `publishConfig.access: "public"` is required in package.json. npm will not
+  generate provenance for a first publish otherwise:
+  *"Can't generate provenance for new or private package."*
+- **Delete the `NPM_TOKEN` secret once trust is configured.** `publish.yml`
+  writes the token to `.npmrc` when the secret exists, and token auth puts you
+  straight back into `EOTP`. With no secret, the workflow authenticates via OIDC.
+
+Releases from here are just `npm run release` — no token exists anywhere.
