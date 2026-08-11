@@ -1,0 +1,18 @@
+{
+	"node": "n8n-nodes-aca.aca",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Sales", "Marketing"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://github.com/seguelaCedric/n8n-nodes-aca?tab=readme-ov-file#credentials"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://github.com/seguelaCedric/n8n-nodes-aca?tab=readme-ov-file#readme"
+			}
+		]
+	}
+}
