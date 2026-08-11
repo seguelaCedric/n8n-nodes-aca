@@ -12,6 +12,12 @@ on:
 jobs:
   doctor:
     runs-on: ubuntu-latest
+    # Must mirror publish.yml, or the publish attempt below fails on a missing
+    # OIDC permission long before it reaches the registry rejection we are here
+    # to diagnose.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -43,8 +49,9 @@ jobs:
         run: |
           npm ci --ignore-scripts
           npm run build
-          echo "--- publish with verbose logging ---"
-          npm publish --access public --provenance --loglevel verbose 2>&1 | tail -60
+          echo "--- publish with silly logging, to capture the PUT response body ---"
+          npm publish --access public --provenance --loglevel silly 2>&1 \
+            | grep -iE "PUT|40[0-9]|error|forbidden|denied|body|2fa|otp" | tail -40
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
