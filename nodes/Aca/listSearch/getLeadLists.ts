@@ -28,10 +28,22 @@ export async function getLeadLists(
 	const needle = filter?.toLowerCase();
 	const results = lists
 		.filter((list) => !needle || String(list.name ?? '').toLowerCase().includes(needle))
-		.map((list) => ({
-			name: `${String(list.name ?? 'Untitled')} (${Number(list.lead_count ?? 0)} leads)`,
-			value: String(list.id),
-		}));
+		.map((list) => {
+			// A smart list is defined by a filter, not by stored rows: ACA evaluates
+			// its membership when you open it and never writes to the membership
+			// table. Get Members therefore returns nothing for one, however full it
+			// looks in the app — so say that in the picker rather than let someone
+			// pick it and see an empty result with no explanation.
+			const isSmart = list.source_type === 'smart';
+			const suffix = isSmart
+				? ' - smart list, no stored members'
+				: ` (${Number(list.lead_count ?? 0)} leads)`;
+
+			return {
+				name: `${String(list.name ?? 'Untitled')}${suffix}`,
+				value: String(list.id),
+			};
+		});
 
 	return { results };
 }

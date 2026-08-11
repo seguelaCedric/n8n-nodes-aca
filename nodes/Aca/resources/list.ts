@@ -1,6 +1,12 @@
 import type { INodeProperties } from 'n8n-workflow';
 
-import { listLocator, returnAllProperties, splitCsv, unwrapData } from '../shared/descriptions';
+import {
+	listLocator,
+	returnAllProperties,
+	simplifyMembersProperty,
+	splitCsv,
+	unwrapData,
+} from '../shared/descriptions';
 
 const forList = { resource: ['list'] };
 const forGetMany = { ...forList, operation: ['getAll'] };
@@ -57,9 +63,10 @@ export const listDescription: INodeProperties[] = [
 				routing: { request: { method: 'GET', url: '/lists' }, output: unwrapData },
 			},
 			{
-				name: 'Get Members',
+				name: 'Get Contacts',
 				value: 'getMembers',
-				action: 'Get lead list members',
+				action: 'Get contacts in lead list',
+				description: 'Retrieve every contact in a lead list',
 				routing: { request: { method: 'GET', url: '/lists/members' }, output: unwrapData },
 			},
 			{
@@ -122,8 +129,17 @@ export const listDescription: INodeProperties[] = [
 		],
 	},
 
-	/* -- Get Members ----- */
+	/* -- Get Contacts ----- */
 	...returnAllProperties(forGetMembers),
+	simplifyMembersProperty(forGetMembers),
+	{
+		displayName:
+			'Smart lists return nothing here. Their membership is a saved filter that ACA evaluates on demand rather than a stored set of contacts, so there is nothing for this operation to read. The list picker marks them.',
+		name: 'smartListNotice',
+		type: 'notice',
+		default: '',
+		displayOptions: { show: forGetMembers },
+	},
 
 	/* -- Create ----- */
 	{

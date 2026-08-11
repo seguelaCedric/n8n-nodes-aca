@@ -41,7 +41,7 @@ Tokens are stored as a hash and cannot be recovered. If you lose one, revoke it 
 | Resource | Operations |
 | --- | --- |
 | **Contact** | Get, Get Many, Create, Update, Delete, Delete Many |
-| **Lead List** | Get, Get Many, Create, Archive, Get Members, Add Members, Remove Members |
+| **Lead List** | Get, Get Many, Create, Archive, Get Contacts, Add Members, Remove Members |
 | **Sequence** | Get, Get Many |
 | **Enrollment** | Get, Get Many, Create (enroll contacts or whole lists) |
 | **Conversation** | Get, Get Many, Get Messages |
@@ -162,6 +162,11 @@ These are ACA API behaviours that will bite you if you assume otherwise. The nod
 **Creating contacts skips duplicates silently.** With **Dedupe on Email** on (the default), an existing email is counted in `skipped` and its ID is *not* in `contact_ids`. A "create then add to list" chain therefore drops everyone who already existed. Look contacts up by email afterwards if you need every ID.
 
 **Updating a contact replaces `tags` and `custom_fields` wholesale.** They are not merged. Use **Event Action > Add Tag** to add one tag without disturbing the others.
+
+**Smart lists have no stored members.** A smart list is a saved filter that ACA
+evaluates when you open it, so `Lead List > Get Contacts` returns nothing for one
+however full it looks in the app. The list picker labels them. Use a manual,
+imported or pool-built list.
 
 **Lead lists cannot be deleted over the API.** Use **Archive** instead. This is deliberate on ACA's side - a deleted list would orphan enrollments that reference it.
 

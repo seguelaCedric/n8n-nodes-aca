@@ -130,6 +130,52 @@ export function simplifyProperty(show: IDisplayOptions['show']): INodeProperties
 	};
 }
 
+/**
+ * Flatten a list-membership row into the contact it points at.
+ *
+ * `GET /lists/members` returns `{ id, contact_id, added_at, contact: {...} }` —
+ * a membership record with the contact nested inside it. Nobody reading a list
+ * wants to write `$json.contact.display_name`, so lift the contact to the top
+ * level and keep `addedAt` alongside it.
+ */
+export function simplifyMembersProperty(show: IDisplayOptions['show']): INodeProperties {
+	return {
+		displayName: 'Simplify',
+		name: 'simple',
+		type: 'boolean',
+		default: true,
+		// n8n's linter mandates this exact wording on any parameter named `simple`.
+		description:
+			'Whether to return a simplified version of the response instead of the raw data',
+		displayOptions: { show },
+		routing: {
+			output: {
+				postReceive: [
+					{
+						type: 'setKeyValue',
+						enabled: '={{ $value }}',
+						properties: {
+							id: '={{ $responseItem.contact_id }}',
+							name: '={{ $responseItem.contact?.display_name }}',
+							email: '={{ $responseItem.contact?.primary_email }}',
+							phone: '={{ $responseItem.contact?.primary_phone }}',
+							company: '={{ $responseItem.contact?.company }}',
+							jobTitle: '={{ $responseItem.contact?.job_title }}',
+							linkedinUrl: '={{ $responseItem.contact?.primary_linkedin_url }}',
+							country: '={{ $responseItem.contact?.country }}',
+							status: '={{ $responseItem.contact?.status }}',
+							leadScore: '={{ $responseItem.contact?.lead_score }}',
+							tags: '={{ $responseItem.contact?.tags }}',
+							customFields: '={{ $responseItem.contact?.custom_fields }}',
+							addedAt: '={{ $responseItem.added_at }}',
+						},
+					},
+				],
+			},
+		},
+	};
+}
+
 /** Picker for a lead list, by name or by pasted ID. */
 export const listLocator: INodeProperties = {
 	displayName: 'Lead List',
