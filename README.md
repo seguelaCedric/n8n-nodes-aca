@@ -46,7 +46,7 @@ Tokens are stored as a hash and cannot be recovered. If you lose one, revoke it 
 | **Enrollment** | Get, Get Many, Create (enroll contacts or whole lists) |
 | **Conversation** | Get, Get Many, Get Messages |
 | **Message** | Send (reply into an existing conversation) |
-| **Custom Field** | Get Many (which custom field keys exist, and their types) |
+| **Custom Field** | Get Many, Create |
 | **Event Action** | Add Tag, Remove Tag, Add Note, Change Stage, Update Score, Send Message, Enroll in Sequence, Remove From Sequence, Set AI Handling, Assign to User |
 
 **Get Many** operations support **Return All**, which follows ACA's cursor pagination for you, and a **Filters** collection that maps to the API's own filters.
@@ -184,7 +184,12 @@ These are ACA API behaviours that will bite you if you assume otherwise. The nod
 
 **Creating contacts skips duplicates silently.** With **Dedupe on Email** on (the default), an existing email is counted in `skipped` and its ID is *not* in `contact_ids`. A "create then add to list" chain therefore drops everyone who already existed. Look contacts up by email afterwards if you need every ID.
 
-**Updating a contact replaces `tags` and `custom_fields` wholesale.** They are not merged. Use **Event Action > Add Tag** to add one tag without disturbing the others.
+**Updating a contact merges custom fields, but replaces tags.** `Contact > Update`
+exposes every updatable field individually, and its **Custom Fields** collection
+picks keys from a dropdown of your organisation's definitions - values are merged,
+so fields you do not list keep what they had, and an empty value removes one.
+`tags` is the exception: it still replaces the whole list, so use
+**Event Action > Add Tag** to add one without disturbing the rest.
 
 **Smart lists have no stored members.** A smart list is a saved filter that ACA
 evaluates when you open it, so `Lead List > Get Contacts` returns nothing for one

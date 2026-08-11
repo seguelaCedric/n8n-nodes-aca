@@ -1,5 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 
+import { CONTACT_UPDATE_BODY, contactUpdateProperties } from '../shared/contactFields';
 import {
 	confirmDeleted,
 	returnAllProperties,
@@ -11,7 +12,6 @@ import {
 const forContact = { resource: ['contact'] };
 const forGetMany = { ...forContact, operation: ['getAll'] };
 const forCreate = { ...forContact, operation: ['create'] };
-const forUpdate = { ...forContact, operation: ['update'] };
 const forDeleteMany = { ...forContact, operation: ['deleteMany'] };
 
 export const contactDescription: INodeProperties[] = [
@@ -70,7 +70,11 @@ export const contactDescription: INodeProperties[] = [
 				action: 'Update contact',
 				description: 'Update a single contact by ID',
 				routing: {
-					request: { method: 'PATCH', url: '=/contacts/{{ $parameter.contactId }}' },
+					request: {
+						method: 'PATCH',
+						url: '=/contacts/{{ $parameter.contactId }}',
+						body: CONTACT_UPDATE_BODY,
+					},
 					output: unwrapData,
 				},
 			},
@@ -220,25 +224,7 @@ export const contactDescription: INodeProperties[] = [
 	},
 
 	/* -- Update ----- */
-	{
-		displayName:
-			'<code>tags</code> and <code>custom_fields</code> are <b>replaced wholesale</b>, not merged. To add one tag, read the contact first and send the full list back.',
-		name: 'updateNotice',
-		type: 'notice',
-		default: '',
-		displayOptions: { show: forUpdate },
-	},
-	{
-		displayName: 'Fields',
-		name: 'updateFields',
-		type: 'json',
-		required: true,
-		default: '{\n  "job_title": "Head of Growth"\n}',
-		description:
-			'Fields to change. Anything outside the updatable set is ignored rather than rejected.',
-		displayOptions: { show: forUpdate },
-		routing: { request: { body: '={{ JSON.parse($value) }}' } },
-	},
+	...contactUpdateProperties,
 
 	/* -- Delete Many ----- */
 	{

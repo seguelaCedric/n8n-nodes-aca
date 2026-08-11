@@ -3,6 +3,7 @@ import { NodeConnectionTypes, type INodeType, type INodeTypeDescription } from '
 import { ACA_BASE_URL } from './shared/constants';
 import { getLeadLists } from './listSearch/getLeadLists';
 import { getSequences } from './listSearch/getSequences';
+import { getCustomFields } from './loadOptions/getCustomFields';
 import { contactDescription } from './resources/contact';
 import { conversationDescription } from './resources/conversation';
 import { customFieldDescription } from './resources/customField';
@@ -70,6 +71,9 @@ export class Aca implements INodeType {
 		listSearch: {
 			getLeadLists,
 			getSequences,
+		},
+		loadOptions: {
+			getCustomFields,
 		},
 	};
 }
