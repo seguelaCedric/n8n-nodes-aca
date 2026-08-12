@@ -253,7 +253,13 @@ export const listDescription: INodeProperties[] = [
 		description:
 			'Applied to the source list to pick the subset to copy. Up to 50,000 matches per call.',
 		displayOptions: { show: { ...forAddMembers, addBy: ['sourceList'] } },
-		routing: { send: { type: 'body', property: 'filters', value: '={{ JSON.parse($value) }}' } },
+		routing: {
+			send: {
+				type: 'body',
+				property: 'filters',
+				value: '={{ typeof $value === "string" ? JSON.parse($value) : $value }}',
+			},
+		},
 	},
 
 	/* -- Remove members ----- */

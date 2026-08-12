@@ -1,11 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 
-import {
-	returnAllProperties,
-	sequenceLocator,
-	splitCsv,
-	unwrapData,
-} from '../shared/descriptions';
+import { returnAllProperties, sequenceLocator, splitCsv, unwrapData } from '../shared/descriptions';
 
 const forEnrollment = { resource: ['enrollment'] };
 const forGetMany = { ...forEnrollment, operation: ['getAll'] };
@@ -192,7 +187,7 @@ export const enrollmentDescription: INodeProperties[] = [
 					send: {
 						type: 'body',
 						property: 'customDataByContactId',
-						value: '={{ JSON.parse($value) }}',
+						value: '={{ typeof $value === "string" ? JSON.parse($value) : $value }}',
 					},
 				},
 			},

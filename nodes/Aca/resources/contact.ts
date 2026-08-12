@@ -182,11 +182,22 @@ export const contactDescription: INodeProperties[] = [
 		name: 'contacts',
 		type: 'json',
 		required: true,
-		default: '[\n  {\n    "display_name": "Jane Doe",\n    "primary_email": "jane@acme.com"\n  }\n]',
+		default:
+			'[\n  {\n    "display_name": "Jane Doe",\n    "primary_email": "jane@acme.com"\n  }\n]',
 		description:
 			'Array of contacts to create, up to 1000 per call. Each may carry <code>display_name</code>, <code>primary_email</code>, <code>primary_phone</code>, <code>company</code>, <code>job_title</code>, <code>tags</code> and <code>custom_fields</code>.',
 		displayOptions: { show: forCreate },
-		routing: { send: { type: 'body', property: 'contacts' } },
+		// A `json` parameter hands over the raw string, so without parsing here the
+		// API received `contacts` as text and rejected every create with
+		// "contacts[] is required and must be non-empty". An expression that
+		// already resolves to an array is passed straight through.
+		routing: {
+			send: {
+				type: 'body',
+				property: 'contacts',
+				value: '={{ typeof $value === "string" ? JSON.parse($value) : $value }}',
+			},
+		},
 	},
 	{
 		displayName: 'Options',
