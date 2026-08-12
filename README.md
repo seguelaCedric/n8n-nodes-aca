@@ -100,6 +100,8 @@ Pick the events you care about and activate the workflow. The node registers its
 | `sequence_completed` | A lead reaches the end of an email sequence |
 | `lead_replied` | An enrolled lead replies, and the sequence stops for them |
 | `handoff_requested` | A human takes over a conversation from the AI |
+| `list_member_added` | A contact is added to a lead list |
+| `list_member_removed` | A contact is removed from a lead list |
 
 ### Output
 
@@ -199,6 +201,11 @@ imported or pool-built list.
 **Lead lists cannot be deleted over the API.** Use **Archive** instead. This is deliberate on ACA's side - a deleted list would orphan enrollments that reference it.
 
 **Enrolling nothing is a normal outcome.** `Enrollment > Create` returns counts, not a success flag: `enrolled`, `skipped`, `noEmail`, `suppressed` and `skippedActiveElsewhere`. A lead already active in another sequence is skipped by default, because ACA will not let two sequences email the same person at once. Branch on `enrolled`, not on the absence of an error.
+
+**List membership events are per contact.** `list_member_added` fires once per
+row, so a bulk add or a pool build produces one delivery per contact. It costs
+nothing when nobody subscribes, but subscribe on an organisation that builds
+large lists and expect proportionally large bursts.
 
 **`contact_updated` is noisy.** It fires on every row change, so a bulk edit or an enrichment run produces a large burst. If you want meaningful transitions, subscribe to `stage_changed` or `score_changed`.
 

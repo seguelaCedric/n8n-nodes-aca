@@ -120,7 +120,8 @@ and `target`.
 `n8n-nodes-aca.acaTrigger` takes `events` (multiOptions) from:
 `contact_created`, `contact_updated`, `stage_changed`, `score_changed`,
 `message_received`, `message_sent`, `tag_added`, `tag_removed`,
-`sequence_completed`, `lead_replied`, `handoff_requested`.
+`sequence_completed`, `lead_replied`, `handoff_requested`,
+`list_member_added`, `list_member_removed`.
 
 Output is flattened by default:
 
@@ -158,6 +159,10 @@ Branch on `enrolled`, never on the absence of an error.
 **Trigger delivery is at-least-once.** Retried up to three times, roughly a
 minute apart, reusing `deliveryId`. Deduplicate on it before doing anything that
 must not happen twice.
+
+**List membership events are per contact.** `list_member_added` fires once per
+row, so a pool build adding 250,000 contacts queues 250,000 deliveries for any
+subscriber. Nothing is queued when nobody subscribes.
 
 **`contact_updated` is noisy.** It fires on every row change, so bulk edits and
 enrichment runs produce bursts. Prefer `stage_changed` or `score_changed` for

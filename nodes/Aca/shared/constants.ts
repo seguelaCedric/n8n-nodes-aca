@@ -8,12 +8,14 @@ export const ACA_BASE_URL = 'https://api.automatedclientacquisition.com/v1';
  * than aspirational - if an event is not here, nothing in ACA fires it.
  */
 export const ACA_WEBHOOK_EVENTS = [
+	{ name: 'Added to Lead List', value: 'list_member_added' },
 	{ name: 'Contact Created', value: 'contact_created' },
 	{ name: 'Contact Updated', value: 'contact_updated' },
 	{ name: 'Handoff Requested', value: 'handoff_requested' },
 	{ name: 'Lead Replied', value: 'lead_replied' },
 	{ name: 'Message Received', value: 'message_received' },
 	{ name: 'Message Sent', value: 'message_sent' },
+	{ name: 'Removed From Lead List', value: 'list_member_removed' },
 	{ name: 'Score Changed', value: 'score_changed' },
 	{ name: 'Sequence Completed', value: 'sequence_completed' },
 	{ name: 'Stage Changed', value: 'stage_changed' },
