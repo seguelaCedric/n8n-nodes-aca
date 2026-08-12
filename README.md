@@ -210,6 +210,24 @@ imported or pool-built list.
 
 Tested against n8n 1.x with `n8n-workflow` 2.x. No runtime dependencies.
 
+## Building workflows with Claude
+
+This repo ships a [Claude skill](skills/aca-n8n-workflows/SKILL.md) that teaches
+Claude how to build n8n workflows with this node - the exact parameter names, the
+patterns worth copying, and the ACA behaviours that decide whether a workflow is
+correct rather than merely valid.
+
+Copy the folder into your skills directory:
+
+```bash
+cp -r skills/aca-n8n-workflows ~/.claude/skills/
+```
+
+Then ask for what you want - "build me an n8n workflow that tags every lead who
+replies and notifies Slack" - and it will use the right operations, know that
+enrolling nothing is a normal outcome, and not reach for a smart list expecting
+members.
+
 ## Resources
 
 - [ACA API reference](https://www.automatedclientacquisition.com/developers)

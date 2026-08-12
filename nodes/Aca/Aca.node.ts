@@ -20,7 +20,10 @@ export class Aca implements INodeType {
 		icon: { light: 'file:../../icons/aca.svg', dark: 'file:../../icons/aca.dark.svg' },
 		group: ['input'],
 		version: 1,
-		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
+		// Event Action is selected by `action`, not `operation`, so the usual
+		// "operation: resource" would read "undefined: eventAction" on the canvas.
+		subtitle:
+			'={{ $parameter["resource"] === "eventAction" ? $parameter["action"] : $parameter["operation"] + ": " + $parameter["resource"] }}',
 		description: 'Manage contacts, lead lists, sequences and conversations in ACA',
 		defaults: { name: 'ACA' },
 		usableAsTool: true,
@@ -42,18 +45,47 @@ export class Aca implements INodeType {
 				noDataExpression: true,
 				default: 'contact',
 				options: [
-					{ name: 'Contact', value: 'contact' },
-					{ name: 'Conversation', value: 'conversation' },
-					{ name: 'Custom Field', value: 'customField' },
-					{ name: 'Enrollment', value: 'enrollment' },
+					{
+						name: 'Contact',
+						value: 'contact',
+						description: 'People in the CRM. Read, create, update and delete.',
+					},
+					{
+						name: 'Conversation',
+						value: 'conversation',
+						description: 'Message threads across every channel, and their history',
+					},
+					{
+						name: 'Custom Field',
+						value: 'customField',
+						description: 'The schema behind a contact custom fields. Read it before writing them.',
+					},
+					{
+						name: 'Enrollment',
+						value: 'enrollment',
+						description: 'Put leads into an email sequence, and see who is running through one',
+					},
 					{
 						name: 'Event Action',
 						value: 'eventAction',
-						description: 'Act on a contact or conversation: tag, note, stage, score, handoff',
+						description:
+							'Act on a contact or conversation: tag, note, stage, score, handoff. Additive where Update replaces.',
 					},
-					{ name: 'Lead List', value: 'list' },
-					{ name: 'Message', value: 'message' },
-					{ name: 'Sequence', value: 'sequence' },
+					{
+						name: 'Lead List',
+						value: 'list',
+						description: 'Named groups of contacts, and the contacts inside them',
+					},
+					{
+						name: 'Message',
+						value: 'message',
+						description: 'Reply into an existing conversation on its own channel',
+					},
+					{
+						name: 'Sequence',
+						value: 'sequence',
+						description: 'Email sequences and their steps. Read-only.',
+					},
 				],
 			},
 			...contactDescription,

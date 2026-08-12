@@ -35,7 +35,10 @@ export class AcaTrigger implements INodeType {
 		icon: { light: 'file:../../icons/aca.svg', dark: 'file:../../icons/aca.dark.svg' },
 		group: ['trigger'],
 		version: 1,
-		subtitle: '={{$parameter["events"].join(", ")}}',
+		// An unconfigured trigger has no events yet; joining an empty array would
+		// leave the canvas node captionless.
+		subtitle:
+			'={{ $parameter["events"] && $parameter["events"].length ? $parameter["events"].join(", ") : "no events selected" }}',
 		description: 'Starts the workflow when something happens in ACA',
 		defaults: { name: 'ACA Trigger' },
 		inputs: [],
