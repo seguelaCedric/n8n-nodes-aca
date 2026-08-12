@@ -61,6 +61,20 @@ on:
       # See "TAG CONVENTION" above if you prefer tags with a "v" prefix.
       - '*.*.*'
 
+# Pushing 0.4.1 produced two runs a second apart. The first to reach npm
+# published; the second died on
+#   403 You cannot publish over the previously published versions: 0.4.1
+# which looks like a broken release and is not one.
+#
+# Serialise duplicate deliveries for the same tag, so the second run cannot race
+# the first and instead observes its result. cancel-in-progress stays false
+# deliberately: a publish is not safe to interrupt - killing it midway can leave
+# a provenance statement in the sigstore transparency log with no package behind
+# it. Let the first finish; the duplicate waits, then skips (see the guard step).
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   publish:
     name: Publish to npm
@@ -84,7 +98,23 @@ jobs:
       - name: Install dependencies
         run: 'npm ci'
 
+      - name: Check whether this version is already published
+        id: published
+        # Makes the workflow idempotent. Without this, a duplicate delivery or a
+        # manual re-run fails with a 403 that reads like a broken release. Asking
+        # npm first turns that into a clean skip.
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VERSION" version > /dev/null 2>&1; then
+            echo "Already on npm: $NAME@$VERSION - nothing to publish."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Release
+        if: steps.published.outputs.skip == 'false'
         # Publishes to npm with a provenance attestation (requires id-token: write above).
         # Lint and build run automatically as part of the release process.
         #
