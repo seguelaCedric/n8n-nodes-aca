@@ -2,12 +2,13 @@
 
 An [n8n](https://n8n.io) community node for [ACA](https://www.automatedclientacquisition.com) - Automated Client Acquisition.
 
-ACA is a multi-tenant outbound platform: CRM contacts, lead lists, email sequences, and a unified inbox across LinkedIn, email, WhatsApp, Instagram, Telegram and SMS. This package gives you two nodes:
+ACA is a multi-tenant outbound platform: CRM contacts, lead lists, email sequences, and a unified inbox across LinkedIn, email, WhatsApp, Instagram, Telegram and SMS. This package gives you three nodes:
 
 - **ACA** - read and write contacts, lists, sequences, enrollments and conversations, and act on them.
 - **ACA Trigger** - start a workflow when something happens in ACA, with signature verification.
+- **ACA Signal Trigger** - start a workflow when a buying signal puts a lead on a lead list, with the signal attached.
 
-[Installation](#installation) | [Credentials](#credentials) | [ACA node](#aca-node) | [ACA Trigger](#aca-trigger) | [Example workflow](#example-workflow) | [Things worth knowing](#things-worth-knowing)
+[Installation](#installation) | [Credentials](#credentials) | [ACA node](#aca-node) | [ACA Trigger](#aca-trigger) | [ACA Signal Trigger](#aca-signal-trigger) | [Example workflow](#example-workflow) | [Things worth knowing](#things-worth-knowing)
 
 ## Installation
 
@@ -103,6 +104,19 @@ Pick the events you care about and activate the workflow. The node registers its
 | `list_member_added` | A contact is added to a lead list |
 | `list_member_removed` | A contact is removed from a lead list |
 
+### Narrowing to one lead list
+
+Select `list_member_added` or `list_member_removed` and a **Lead List Names or IDs** picker appears. Pick one or more lists and only those fire the workflow; leave it empty for every list.
+
+The filter is registered with ACA, not applied in n8n - events for the lists you did not pick are never queued and never delivered, so a 250,000-contact build into some other list costs your workflow nothing.
+
+Every list event carries the list it happened in, so you can branch on it too:
+
+```
+{{ $json.data.list_name }}   // "Q3 SaaS founders"
+{{ $json.data.list_id }}
+```
+
 ### Output
 
 By default the node emits a flattened shape:
@@ -124,6 +138,72 @@ Turn on **Options > Raw Envelope** to get ACA's delivery body verbatim instead.
 Delivery is **at-least-once**. ACA retries a failed delivery up to three times, roughly a minute apart, reusing the same `X-Webhook-ID` - surfaced as `deliveryId`. If your workflow does anything that must not happen twice, deduplicate on that value.
 
 Every delivery is signed. The node verifies `X-Webhook-Signature` (HMAC-SHA256 of the raw body) against the secret ACA issued when the subscription was created, and rejects anything that does not match with a `401`. An event you did not select is acknowledged with a `200` and starts nothing, so ACA does not retry it.
+
+## ACA Signal Trigger
+
+Starts the workflow when a **buying signal** puts a lead on a lead list — a funding round, an acquisition, a hiring spike, a leadership move. One execution per lead, with the signal that caused it attached.
+
+It covers every way a signal becomes a lead in ACA: public-signal auto-enroll rules, your own custom signal subscriptions, and pushes from the signal library. `signal_source` tells you which one.
+
+Activate the workflow and the node registers its own subscription, exactly like ACA Trigger. Nothing to paste into ACA's settings.
+
+### Narrowing to a kind of signal
+
+**Signal Types** limits the workflow to funding, hiring, hiring demand, acquisition, job change, growth or executive hire. Leave it empty for all of them.
+
+Unlike ACA Trigger's lead-list filter, this one runs **inside n8n** — ACA still queues and delivers the event, the node acknowledges it with a `200` and starts nothing. Use it for readability, not to save ACA work.
+
+### Output
+
+The signal is flattened to the top level, so there is no `data` to reach through:
+
+```json
+{
+  "event": "signal_lead_added",
+  "timestamp": "2026-08-13T07:24:11.380Z",
+  "deliveryId": "6b1f0c2a-9d3e-4f58-a71b-2c8d4e5f6a7b",
+  "organizationId": "afb808d4-0000-0000-0000-000000000000",
+
+  "signal_source": "public_signal_auto",
+  "signal_type": "funding",
+  "signal_date": "2026-08-12",
+  "signal_title": "MarginEdge Raises $80M in Series D and Debt Funding",
+  "signal_detail": "MarginEdge Raises $80M in Series D and Debt Funding",
+  "why_it_matters": "MarginEdge just raised $80M: new budget and pressure to grow pipeline.",
+  "signal_source_url": "https://www.finsmes.com/...",
+  "amount": "$80M",
+  "investors": "Union Square Ventures, Osage Venture Partners",
+
+  "contact_id": "70b72a7b-...",
+  "contact_name": "Adam Booth",
+  "contact_email": "adam@marginedge.com",
+  "contact_linkedin_url": "https://linkedin.com/in/adamjbooth",
+  "job_title": "Director of Revenue Operations",
+
+  "company": "MarginEdge",
+  "company_domain": "marginedge.com",
+  "company_website": "https://marginedge.com",
+  "company_linkedin": "https://www.linkedin.com/company/marginedge",
+  "company_industry": "Food and Beverage",
+  "company_employee_range": "1001-5000",
+  "company_revenue_range": "Above $50M",
+
+  "list_id": "62ec6931-...",
+  "list_name": "Funding signals — Q3",
+  "member_id": "68c4d70a-...",
+  "added_at": "2026-08-13T07:24:11.380Z",
+
+  "discovery_metadata": { "...": "the stamp ACA's own email writer reads" }
+}
+```
+
+**Empty fields are omitted, not null.** A custom-signal lead carries less than a public-signal one, so guard with `{{ $json.amount ?? '' }}` rather than assuming a key exists.
+
+`discovery_metadata` is passed through verbatim. It is the object ACA's sequence generator reads to resolve `{{ai_signal_*}}` tokens, so you can hand it straight back to `Contact > Update` on a contact you create elsewhere.
+
+Turn on **Options > Raw Envelope** for ACA's delivery body verbatim instead.
+
+Signature verification, retries and the `deliveryId` dedupe key work exactly as described under [Delivery guarantees](#delivery-guarantees).
 
 ## Example workflow
 
@@ -205,7 +285,8 @@ imported or pool-built list.
 **List membership events are per contact.** `list_member_added` fires once per
 row, so a bulk add or a pool build produces one delivery per contact. It costs
 nothing when nobody subscribes, but subscribe on an organisation that builds
-large lists and expect proportionally large bursts.
+large lists and expect proportionally large bursts. Set the lead list filter and
+the burst is confined to the lists you actually picked.
 
 **`contact_updated` is noisy.** It fires on every row change, so a bulk edit or an enrichment run produces a large burst. If you want meaningful transitions, subscribe to `stage_changed` or `score_changed`.
 

@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-aca",
-	"version": "0.4.1",
+	"version": "0.5.0",
 	"description": "Manage contacts, lead lists, email sequences and conversations in ACA (Automated Client Acquisition), and trigger workflows from ACA events",
 	"license": "MIT",
 	"homepage": "https://github.com/seguelaCedric/n8n-nodes-aca",
@@ -47,7 +47,8 @@
 		],
 		"nodes": [
 			"dist/nodes/Aca/Aca.node.js",
-			"dist/nodes/AcaTrigger/AcaTrigger.node.js"
+			"dist/nodes/AcaTrigger/AcaTrigger.node.js",
+			"dist/nodes/AcaSignalTrigger/AcaSignalTrigger.node.js"
 		]
 	},
 	"devDependencies": {

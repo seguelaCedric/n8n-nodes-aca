@@ -18,6 +18,10 @@ export const ACA_WEBHOOK_EVENTS = [
 	{ name: 'Removed From Lead List', value: 'list_member_removed' },
 	{ name: 'Score Changed', value: 'score_changed' },
 	{ name: 'Sequence Completed', value: 'sequence_completed' },
+	// Also the whole subject of the dedicated ACA Signal Trigger node, which
+	// gives it a signal-type filter and a flattened payload. It is offered here
+	// too so one node can mix it with other events.
+	{ name: 'Signal Lead Added', value: 'signal_lead_added' },
 	{ name: 'Stage Changed', value: 'stage_changed' },
 	{ name: 'Tag Added', value: 'tag_added' },
 	{ name: 'Tag Removed', value: 'tag_removed' },
