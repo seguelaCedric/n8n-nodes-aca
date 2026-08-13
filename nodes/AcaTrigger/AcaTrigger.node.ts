@@ -12,14 +12,39 @@ import {
 	type JsonObject,
 } from 'n8n-workflow';
 
+import { getLeadListOptions } from '../Aca/loadOptions/getLeadListOptions';
 import { ACA_WEBHOOK_EVENTS } from '../Aca/shared/constants';
 import { acaApiRequest, acaApiRequestAllItems } from '../Aca/shared/transport';
+
+/** The only events a lead-list filter can narrow. */
+const LIST_EVENTS = ['list_member_added', 'list_member_removed'];
 
 /** Constant-time compare that tolerates a length mismatch instead of throwing. */
 function safeEqual(a: string, b: string): boolean {
 	const bufferA = Buffer.from(a);
 	const bufferB = Buffer.from(b);
 	return bufferA.length === bufferB.length && timingSafeEqual(bufferA, bufferB);
+}
+
+/**
+ * The `filters` object ACA should register for this node.
+ *
+ * An empty selection is not "no lists"; it means "every list", so it sends `{}`
+ * rather than `{ list_ids: [] }` — and `checkExists` compares against the same
+ * shape, or the two would never match and the node would re-register on every
+ * activation.
+ */
+function buildFilters(listIds: string[], events: string[]): IDataObject {
+	const narrowsAListEvent = events.some((event) => LIST_EVENTS.includes(event));
+	if (!narrowsAListEvent || listIds.length === 0) return {};
+	return { list_ids: [...new Set(listIds)].sort() };
+}
+
+/** Same set of IDs, ignoring order and duplicates. */
+function sameIds(a: string[], b: string[]): boolean {
+	const left = [...new Set(a)].sort();
+	const right = [...new Set(b)].sort();
+	return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 // `usableAsTool` is deliberately absent from this node. n8n's own type allows
@@ -71,6 +96,16 @@ export class AcaTrigger implements INodeType {
 				displayOptions: { show: { events: ['contact_updated'] } },
 			},
 			{
+				displayName: 'Lead List Names or IDs',
+				name: 'listIds',
+				type: 'multiOptions',
+				default: [],
+				typeOptions: { loadOptionsMethod: 'getLeadListOptions' },
+				displayOptions: { show: { events: ['list_member_added', 'list_member_removed'] } },
+				description:
+					'Only start the workflow for these lead lists. Leave empty for every list. ACA applies this before delivery, so unselected lists never reach n8n at all. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+			},
+			{
 				displayName: 'Options',
 				name: 'options',
 				type: 'collection',
@@ -88,6 +123,10 @@ export class AcaTrigger implements INodeType {
 				],
 			},
 		],
+	};
+
+	methods = {
+		loadOptions: { getLeadListOptions },
 	};
 
 	webhookMethods = {
@@ -137,6 +176,22 @@ export class AcaTrigger implements INodeType {
 						return false;
 					}
 
+					// Same reasoning for the lead-list filter: it is enforced by ACA at
+					// enqueue time, so a stale one means the workflow keeps receiving
+					// the lists the user just deselected.
+					const wanted = buildFilters(this.getNodeParameter('listIds', []) as string[], events);
+					const registered = (match.filters ?? {}) as IDataObject;
+					if (
+						!sameIds(
+							(wanted.list_ids as string[]) ?? [],
+							(registered.list_ids as string[]) ?? [],
+						)
+					) {
+						delete webhookData.webhookId;
+						delete webhookData.webhookSecret;
+						return false;
+					}
+
 					webhookData.webhookId = match.id as string;
 					webhookData.webhookSecret = match.secret as string;
 					return true;
@@ -165,6 +220,7 @@ export class AcaTrigger implements INodeType {
 					const response = await acaApiRequest.call(this, 'POST', '/webhooks', {
 						target_url: webhookUrl,
 						events,
+						filters: buildFilters(this.getNodeParameter('listIds', []) as string[], events),
 						source: 'n8n',
 					});
 
@@ -253,6 +309,18 @@ export class AcaTrigger implements INodeType {
 			// retries, so returning an error for an authentic event we simply do not
 			// want would only buy two more copies of it.
 			return {};
+		}
+
+		// ACA already filters by lead list at enqueue time, so this normally drops
+		// nothing. It matters in the window where the two disagree: an event queued
+		// against the previous filter, or a subscription somebody re-pointed at
+		// this URL by hand. Same 200-and-do-nothing contract as an unwanted event.
+		if (LIST_EVENTS.includes(eventName)) {
+			const listIds = this.getNodeParameter('listIds', []) as string[];
+			const listId = (body.data as IDataObject | undefined)?.list_id as string | undefined;
+			if (listIds.length > 0 && (!listId || !listIds.includes(listId))) {
+				return {};
+			}
 		}
 
 		const options = this.getNodeParameter('options', {}) as IDataObject;
